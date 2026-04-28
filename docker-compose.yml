@@ -1,0 +1,56 @@
+services:
+  remnanode:
+    container_name: remnanode
+    hostname: remnanode
+    image: remnawave/node:latest
+    network_mode: host
+    restart: always
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    environment:
+      NODE_PORT: ${REMNANODE_NODE_PORT}
+      SECRET_KEY: ${REMNANODE_SECRET_KEY}
+    volumes:
+      - '/dev/shm:/dev/shm'
+    # Ротация: только stdout/stderr; если нода пишет логи в файлы внутри образа, см. доку remnawave
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  nginx-proxy:
+    container_name: nginx-proxy
+    hostname: nginx-proxy
+    image: nginx:alpine
+    network_mode: host
+    restart: always
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    environment:
+      TZ: UTC
+      DOMAIN: ${NGINX_DOMAIN:-example.domain}
+    volumes:
+      - './nginx/entrypoint.sh:/entrypoint.sh:ro'
+      - '${NGINX_CONF_TEMPLATE:-./nginx/nginx.conf.template.xhttp-grpc}:/etc/nginx/nginx.conf.template:ro'
+      - './nginx/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro'
+      - './nginx/privkey.key:/etc/nginx/ssl/privkey.key:ro'
+      - '${NGINX_ACME_WEBROOT:-./nginx/acme-webroot}:/var/www/acme:rw'
+      - '/dev/shm:/dev/shm:rw'
+    entrypoint:
+      - /bin/sh
+      - /entrypoint.sh
+    # Ротация без logrotate: логи Nginx -> stdout/stderr, ограничение размера файлов json-file у Docker
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Управление стеком из корня репозитория (работает при вызове из любого каталога).
+# init вызывает scripts/bootstrap-host.sh (нужен root для apt/Docker/acme).
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+help() {
+    echo "Usage: $0 {init|start|stop|restart|update|logs|help}"
+    echo "  init     - Подготовка хоста (bootstrap-host.sh) и проверка docker compose"
+    echo "  start    - docker compose build && up -d"
+    echo "  stop     - docker compose stop"
+    echo "  restart  - docker compose restart"
+    echo "  update   - git pull, build, up -d"
+    echo "  logs     - docker compose logs -f"
+    echo "  help     - Эта справка"
+}
+
+init() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        bash "$ROOT/scripts/bootstrap-host.sh"
+    else
+        sudo bash "$ROOT/scripts/bootstrap-host.sh"
+    fi
+    docker compose version >/dev/null
+}
+
+start() {
+    docker compose build
+    docker compose up -d
+}
+
+stop() {
+    docker compose stop
+}
+
+restart() {
+    docker compose restart
+}
+
+update() {
+    git pull
+    docker compose build
+    docker compose up -d
+}
+
+logs() {
+    docker compose logs -f
+}
+
+case "${1:-}" in
+    init)
+        init
+        ;;
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    update)
+        update
+        ;;
+    logs)
+        logs
+        ;;
+    help|--help|-h)
+        help
+        ;;
+    *)
+        help
+        exit 1
+        ;;
+esac
