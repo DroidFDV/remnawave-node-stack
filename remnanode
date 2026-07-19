@@ -8,14 +8,28 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 help() {
-    echo "Usage: $0 {init|start|stop|restart|update|logs|help}"
-    echo "  init     - Подготовка хоста (bootstrap-host.sh) и проверка docker compose"
-    echo "  start    - docker compose build && up -d"
-    echo "  stop     - docker compose stop"
-    echo "  restart  - docker compose restart"
-    echo "  update   - git pull, build, up -d"
-    echo "  logs     - docker compose logs -f"
-    echo "  help     - Эта справка"
+    echo "Usage: $0 {init|start|stop|restart|update|logs|assemble-nginx|configure-ufw|help}"
+    echo "  init           - Подготовка хоста (bootstrap-host.sh) и проверка docker compose"
+    echo "  configure-ufw  - UFW: 80/443 tcp, HY2 udp, remnanode API (sudo)"
+    echo "  assemble-nginx - Собрать nginx/nginx.conf.template из фрагментов (.env: NGINX_PARTS)"
+    echo "  start          - assemble-nginx + docker compose build && up -d"
+    echo "  stop           - docker compose stop"
+    echo "  restart        - docker compose restart"
+    echo "  update         - git pull, assemble-nginx, build, up -d"
+    echo "  logs           - docker compose logs -f"
+    echo "  help           - Эта справка"
+}
+
+assemble_nginx() {
+    bash "$ROOT/nginx/assemble-nginx.sh"
+}
+
+configure_ufw() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        bash "$ROOT/scripts/configure-ufw.sh"
+    else
+        sudo bash "$ROOT/scripts/configure-ufw.sh"
+    fi
 }
 
 init() {
@@ -28,6 +42,7 @@ init() {
 }
 
 start() {
+    assemble_nginx
     docker compose build
     docker compose up -d
 }
@@ -42,6 +57,7 @@ restart() {
 
 update() {
     git pull
+    assemble_nginx
     docker compose build
     docker compose up -d
 }
@@ -53,6 +69,12 @@ logs() {
 case "${1:-}" in
     init)
         init
+        ;;
+    assemble-nginx)
+        assemble_nginx
+        ;;
+    configure-ufw)
+        configure_ufw
         ;;
     start)
         start

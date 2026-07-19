@@ -14,6 +14,8 @@ services:
       SECRET_KEY: ${REMNANODE_SECRET_KEY}
     volumes:
       - '/dev/shm:/dev/shm'
+      - './nginx/fullchain.pem:/etc/xray/ssl/fullchain.pem:ro'
+      - './nginx/privkey.key:/etc/xray/ssl/privkey.key:ro'
     # Ротация: только stdout/stderr; если нода пишет логи в файлы внутри образа, см. доку remnawave
     logging:
       driver: json-file
@@ -36,7 +38,7 @@ services:
       DOMAIN: ${NGINX_DOMAIN:-example.domain}
     volumes:
       - './nginx/entrypoint.sh:/entrypoint.sh:ro'
-      - '${NGINX_CONF_TEMPLATE:-./nginx/nginx.conf.template.xhttp-grpc}:/etc/nginx/nginx.conf.template:ro'
+      - './nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro'
       - './nginx/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro'
       - './nginx/privkey.key:/etc/nginx/ssl/privkey.key:ro'
       - '${NGINX_ACME_WEBROOT:-./nginx/acme-webroot}:/var/www/acme:rw'

@@ -62,13 +62,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y cron socat ufw curl ca-certificates openssl
 
-echo "UFW: SSH, 80/tcp, 443/tcp, ${REMNANODE_NODE_PORT}/tcp"
-ufw allow OpenSSH comment 'ssh' 2>/dev/null || ufw allow 22/tcp comment 'ssh'
-ufw allow 80/tcp comment 'http'
-ufw allow 443/tcp comment 'https'
-ufw allow "${REMNANODE_NODE_PORT}"/tcp comment 'remnanode'
-ufw --force enable
-ufw reload
+bash "$SCRIPT_DIR/configure-ufw.sh"
 
 if ! command -v docker >/dev/null 2>&1; then
     curl -fsSL https://get.docker.com | sh
@@ -106,8 +100,13 @@ wait_for_port_80() {
     return 1
 }
 
+assemble_nginx() {
+    bash "$PROJECT_ROOT/nginx/assemble-nginx.sh"
+}
+
 compose_up_and_issue_webroot() {
     ensure_dummy_tls
+    assemble_nginx
     echo "Запуск стека: docker compose up -d"
     (cd "$PROJECT_ROOT" && docker compose up -d)
     wait_for_port_80
@@ -139,6 +138,6 @@ fi
 "$ACME" --install-cert -d "$NGINX_DOMAIN" \
     --key-file "$NGINX_SSL_DIR/privkey.key" \
     --fullchain-file "$NGINX_SSL_DIR/fullchain.pem" \
-    --reloadcmd "cd \"$PROJECT_ROOT\" && docker compose restart nginx-proxy"
+    --reloadcmd "cd \"$PROJECT_ROOT\" && docker compose restart nginx-proxy remnanode"
 
 echo "Готово: $NGINX_SSL_DIR/fullchain.pem и privkey.key"

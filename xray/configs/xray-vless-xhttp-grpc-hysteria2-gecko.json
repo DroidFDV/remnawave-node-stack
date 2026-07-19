@@ -1,0 +1,153 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "stats": {},
+  "policy": {
+    "levels": {
+      "0": {
+        "statsUserUplink": true,
+        "statsUserDownlink": true,
+        "statsUserOnline": true
+      }
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true
+    }
+  },
+  "inbounds": [
+    {
+      "tag": "XHTTP",
+      "listen": "/dev/shm/xrxh.socket,0666",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+          "path": "/xhttppath/"
+        }
+      }
+    },
+    {
+      "tag": "GRPC",
+      "listen": "/dev/shm/xrxg.socket,0666",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "grpcvless"
+        }
+      }
+    },
+    {
+      "tag": "WS",
+      "listen": "/dev/shm/xrws.socket,0666",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/wspath/"
+        }
+      }
+    },
+    {
+      "tag": "HYSTERIA2",
+      "listen": "0.0.0.0",
+      "port": 443,
+      "protocol": "hysteria",
+      "settings": {
+        "version": 2,
+        "clients": []
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "streamSettings": {
+        "network": "hysteria",
+        "security": "tls",
+        "tlsSettings": {
+          "alpn": ["h3"],
+          "minVersion": "1.3",
+          "maxVersion": "1.3",
+          "certificates": [
+            {
+              "certificateFile": "/etc/xray/ssl/fullchain.pem",
+              "keyFile": "/etc/xray/ssl/privkey.key"
+            }
+          ]
+        },
+        "hysteriaSettings": {
+          "version": 2,
+          "udpIdleTimeout": 60,
+          "masquerade": {
+            "type": "proxy",
+            "url": "https://www.bing.com",
+            "rewriteHost": true
+          }
+        },
+        "finalmask": {
+          "udp": [
+            {
+              "type": "salamander",
+              "settings": {
+                "password": "CHANGE_ME_GECKO_PASSWORD",
+                "packetSize": "512-1200"
+              }
+            }
+          ],
+          "quicParams": {
+            "congestion": "bbr",
+            "maxIdleTimeout": 30,
+            "keepAlivePeriod": 10,
+            "disablePathMTUDiscovery": false
+          }
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "protocol": ["bittorrent"],
+        "outboundTag": "BLOCK"
+      }
+    ]
+  }
+}
