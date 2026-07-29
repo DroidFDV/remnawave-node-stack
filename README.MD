@@ -4,6 +4,8 @@
 
 **Nginx:** см. [nginx/README.md](nginx/README.md) — фрагменты, `assemble-nginx.sh`, переменные `NGINX_PARTS` / `NGINX_FALLBACK`.
 
+**Xray Config Profile:** см. [xray/README.md](xray/README.md) — управление генератором (`assemble-xray`), пресеты, Panel workflow, troubleshooting.
+
 ## Первичная настройка хоста (Debian/Ubuntu) и TLS
 
 1. Скопируйте `.env.example` в `.env`, задайте **`SSL_EMAIL`**, **`NGINX_DOMAIN`**, **`NGINX_PARTS`**, **`NGINX_FALLBACK`**, **`REMNANODE_*`**. При использовании Hysteria2 — **`HY2_UDP_PORT`** (по умолчанию `443`). **`NGINX_SSL_DIR`** и **`NGINX_ACME_WEBROOT`** — относительно корня репозитория (по умолчанию **`./nginx`** и **`./nginx/acme-webroot`**).
@@ -63,19 +65,35 @@ sudo ufw status numbered
 ./remnanode help
 ./remnanode init            # bootstrap хоста + проверка compose (sudo)
 ./remnanode configure-ufw   # UFW: nginx + HY2 udp + remnanode API (sudo)
-./remnanode assemble-nginx # собрать nginx.conf.template из fragments/
-./remnanode start           # assemble-nginx + compose up (идемпотентно)
+./remnanode assemble-nginx  # собрать nginx.conf.template из fragments/
+./remnanode assemble-xray   # собрать xray/configs/xray-generated.json из fragments/
+./remnanode start           # assemble-nginx + assemble-xray + compose up (идемпотентно)
 ./remnanode restart
-./remnanode update          # git pull + assemble + compose up
+./remnanode update          # git pull + assemble-nginx + assemble-xray + compose up
 ./remnanode logs
 ```
 
+## Сборка Xray Config Profile
+
+```bash
+# .env (пути относительно корня репозитория)
+XRAY_PARTS=xhttp,grpc,ws
+XRAY_HY2_MODE=salamander    # off | salamander | gecko
+XRAY_OUTPUT=xray/configs/xray-generated.json
+
+./remnanode assemble-xray
+# или: ./xray/assemble-xray.sh --dry-run
+```
+
+Итоговый JSON — для вставки в Panel → **Config Profiles**. Старые `xray/configs/xray-vless-*.json` остаются как ручные примеры.
+
 ## VLESS WebSocket + TLS
 
-TLS терминирует **nginx**; Xray слушает plain WS на unix-сокете `/dev/shm/xrws.socket`. Включите фрагмент: `NGINX_PARTS=...,ws` и пересоберите nginx.
+TLS терминирует **nginx**; Xray слушает plain WS на unix-сокете `/dev/shm/xrws.socket`. Включите фрагмент: `NGINX_PARTS=...,ws` и пересоберите nginx. Для профиля Xray: `XRAY_PARTS=...,ws`.
 
 Reference-конфиги:
 
+- `xray/configs/xray-generated.json` — через `assemble-xray` (предпочтительно)
 - `xray/configs/xray-vless-ws.json` — только WS
 - `xray/configs/xray-vless-xhttp-grpc-ws.json` — XHTTP + gRPC + WS
 - HY2-профили salamander/gecko уже содержат inbound `WS`
@@ -92,14 +110,22 @@ Reference-конфиги:
 
 HY2 работает через **Xray inbound** в Config Profile, **не через nginx**. Слушает **UDP** на порту из профиля (обычно **443**) — тот же порт должен быть открыт в UFW как **`HY2_UDP_PORT`**.
 
-Reference-конфиги в `xray/configs/`:
+Сборка профиля:
+
+```bash
+XRAY_PARTS=xhttp,grpc,ws
+XRAY_HY2_MODE=salamander   # или gecko
+./remnanode assemble-xray
+```
+
+Ручные reference в `xray/configs/`:
 
 - `xray-vless-xhttp-grpc-hysteria2-salamander.json`
 - `xray-vless-xhttp-grpc-hysteria2-gecko.json`
 
 ### Настройка в Panel
 
-1. **Config Profiles** — вставить JSON из reference (Salamander или Gecko), заменить `CHANGE_ME_*_PASSWORD`
+1. **Config Profiles** — вставить JSON из `xray-generated.json` (или reference Salamander/Gecko), проверить `HY2_OBFS_PASSWORD`
 2. **Nodes** — назначить профиль, включить inbound `HYSTERIA2`
 3. **Hosts** — protocol `hysteria`, transport `hysteria`, port = `HY2_UDP_PORT`, SNI = `NGINX_DOMAIN`
 4. **Internal Squads** — включить inbound `HYSTERIA2`
@@ -131,6 +157,7 @@ curl -sI https://$NGINX_DOMAIN/
 
 ```bash
 ./nginx/assemble-nginx.sh
+./xray/assemble-xray.sh
 docker compose up -d
 ```
 

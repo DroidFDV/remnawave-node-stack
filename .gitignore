@@ -3,3 +3,4 @@ nginx/nginx.conf.template
 nginx/fullchain.pem
 nginx/privkey.key
 nginx/acme-webroot/.well-known/
+xray/configs/xray-generated.json

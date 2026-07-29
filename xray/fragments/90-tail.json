@@ -1,0 +1,21 @@
+{
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "protocol": ["bittorrent"],
+        "outboundTag": "BLOCK"
+      }
+    ]
+  }
+}

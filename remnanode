@@ -8,20 +8,25 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 help() {
-    echo "Usage: $0 {init|start|stop|restart|update|logs|assemble-nginx|configure-ufw|help}"
+    echo "Usage: $0 {init|start|stop|restart|update|logs|assemble-nginx|assemble-xray|configure-ufw|help}"
     echo "  init           - Подготовка хоста (bootstrap-host.sh) и проверка docker compose"
     echo "  configure-ufw  - UFW: 80/443 tcp, HY2 udp, remnanode API (sudo)"
-    echo "  assemble-nginx - Собрать nginx/nginx.conf.template из фрагментов (.env: NGINX_PARTS)"
-    echo "  start          - assemble-nginx + docker compose build && up -d"
+    echo "  assemble-nginx - Собрать nginx/nginx.conf.template из fragments/ (.env: NGINX_PARTS)"
+    echo "  assemble-xray  - Собрать xray/configs/xray-generated.json из fragments/ (.env: XRAY_PARTS)"
+    echo "  start          - assemble-nginx + assemble-xray + docker compose build && up -d"
     echo "  stop           - docker compose stop"
     echo "  restart        - docker compose restart"
-    echo "  update         - git pull, assemble-nginx, build, up -d"
+    echo "  update         - git pull, assemble-nginx, assemble-xray, build, up -d"
     echo "  logs           - docker compose logs -f"
     echo "  help           - Эта справка"
 }
 
 assemble_nginx() {
     bash "$ROOT/nginx/assemble-nginx.sh"
+}
+
+assemble_xray() {
+    bash "$ROOT/xray/assemble-xray.sh"
 }
 
 configure_ufw() {
@@ -43,6 +48,7 @@ init() {
 
 start() {
     assemble_nginx
+    assemble_xray
     docker compose build
     docker compose up -d
 }
@@ -58,6 +64,7 @@ restart() {
 update() {
     git pull
     assemble_nginx
+    assemble_xray
     docker compose build
     docker compose up -d
 }
@@ -72,6 +79,9 @@ case "${1:-}" in
         ;;
     assemble-nginx)
         assemble_nginx
+        ;;
+    assemble-xray)
+        assemble_xray
         ;;
     configure-ufw)
         configure_ufw

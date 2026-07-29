@@ -1,0 +1,20 @@
+{
+  "tag": "GRPC",
+  "listen": "/dev/shm/xrxg.socket,0666",
+  "protocol": "vless",
+  "settings": {
+    "clients": [],
+    "decryption": "none"
+  },
+  "sniffing": {
+    "enabled": true,
+    "destOverride": ["http", "tls", "quic"]
+  },
+  "streamSettings": {
+    "network": "grpc",
+    "grpcSettings": {
+      "serviceName": "grpcvless",
+      "multiMode": false
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "tag": "WS",
+  "listen": "/dev/shm/xrws.socket,0666",
+  "protocol": "vless",
+  "settings": {
+    "clients": [],
+    "decryption": "none"
+  },
+  "sniffing": {
+    "enabled": true,
+    "destOverride": ["http", "tls", "quic"]
+  },
+  "streamSettings": {
+    "network": "ws",
+    "wsSettings": {
+      "path": "/wspath/"
+    }
+  }
+}

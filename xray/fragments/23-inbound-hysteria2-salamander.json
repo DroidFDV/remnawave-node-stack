@@ -1,0 +1,54 @@
+{
+  "tag": "HYSTERIA2",
+  "listen": "0.0.0.0",
+  "port": __HY2_UDP_PORT__,
+  "protocol": "hysteria",
+  "settings": {
+    "version": 2,
+    "clients": []
+  },
+  "sniffing": {
+    "enabled": true,
+    "destOverride": ["http", "tls", "quic"]
+  },
+  "streamSettings": {
+    "network": "hysteria",
+    "security": "tls",
+    "tlsSettings": {
+      "alpn": ["h3"],
+      "minVersion": "1.3",
+      "maxVersion": "1.3",
+      "certificates": [
+        {
+          "certificateFile": "/etc/xray/ssl/fullchain.pem",
+          "keyFile": "/etc/xray/ssl/privkey.key"
+        }
+      ]
+    },
+    "hysteriaSettings": {
+      "version": 2,
+      "udpIdleTimeout": 60,
+      "masquerade": {
+        "type": "proxy",
+        "url": "https://www.bing.com",
+        "rewriteHost": true
+      }
+    },
+    "finalmask": {
+      "udp": [
+        {
+          "type": "salamander",
+          "settings": {
+            "password": "__HY2_OBFS_PASSWORD__"
+          }
+        }
+      ],
+      "quicParams": {
+        "congestion": "bbr",
+        "maxIdleTimeout": 30,
+        "keepAlivePeriod": 10,
+        "disablePathMTUDiscovery": false
+      }
+    }
+  }
+}
